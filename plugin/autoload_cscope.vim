@@ -154,20 +154,28 @@ function s:Cycle_csdb()
       endif
     endif
     let newcsdbpath = s:Find_in_parent("cscope.out",s:windowdir(),$HOME)
-"    echo "Found cscope.out at: " . newcsdbpath
-"    echo "Windowdir: " . s:windowdir()
+    let pynewcsdbpath = s:Find_in_parent("pycscope.out",s:windowdir(),$HOME)
     if newcsdbpath != "Nothing"
       let b:csdbpath = newcsdbpath
-      if !cscope_connection(3, "out", b:csdbpath)
+      if !cscope_connection(4, "cscope.out", b:csdbpath)
         let save_csvb = &csverb
         set nocsverb
         exe "cs add " . b:csdbpath . "/cscope.out " . b:csdbpath
         set csverb
         let &csverb = save_csvb
       endif
-      "
     else " No cscope database, undo things. (someone rm-ed it or somesuch)
       call s:Unload_csdb()
+    endif
+    if pynewcsdbpath != "Nothing"
+      let b:csdbpath = pynewcsdbpath
+      if !cscope_connection(4, "pycscope.out", b:csdbpath)
+        let save_csvb = &csverb
+        set nocsverb
+        exe "cs add " . b:csdbpath . "/pycscope.out " . b:csdbpath
+        set csverb
+        let &csverb = save_csvb
+      endif
     endif
 endfunc
 
@@ -175,9 +183,13 @@ endfunc
 augroup autoload_cscope
  au!
  au BufEnter *.[chly]  call <SID>Cycle_csdb() | call <SID>Cycle_macros_menus()
+ au BufEnter *.[hc]pp  call <SID>Cycle_csdb() | call <SID>Cycle_macros_menus()
+ au BufEnter *.py      call <SID>Cycle_csdb() | call <SID>Cycle_macros_menus()
  au BufEnter *.cc      call <SID>Cycle_csdb() | call <SID>Cycle_macros_menus()
  au BufUnload *.[chly] call <SID>Unload_csdb() | call <SID>Cycle_macros_menus()
  au BufUnload *.cc     call <SID>Unload_csdb() | call <SID>Cycle_macros_menus()
+ au BufUnload *.[hc]pp call <SID>Unload_csdb() | call <SID>Cycle_macros_menus()
+ au BufUnload *.py     call <SID>Unload_csdb() | call <SID>Cycle_macros_menus()
 augroup END
 
 let &cpo = s:save_cpo
